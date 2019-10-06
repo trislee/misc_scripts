@@ -1,6 +1,6 @@
 # -*- coding: UTF-8 -*-
 
-"""Download all videos from tweets containing a given hashtag, since a
+"""Download all videos from tweets containing a given hashtag, since a \
 specified date.
 """
 
@@ -9,6 +9,7 @@ specified date.
 import os
 import csv
 
+import numpy as np
 import tweepy
 import pandas as pd
 import requests
@@ -17,10 +18,19 @@ import requests
 
 # Twitter API credentials
 # (this won't work unless you have Twitter Developer access)
-consumer_key=''
-consumer_secret=''
-access_token=''
-access_token_secret=''
+consumer_key = ''
+consumer_secret = ''
+access_token = ''
+access_token_secret = ''
+
+# suggested hashtags to download
+#العراقتنتفض
+#مظاهراتالعراق
+#ساحة_التحرير
+#Baghdad
+#Iraq
+#IraqProtests
+#IraqRevolution
 
 # hashtag to download videos of
 hashtag = 'Iraq'
@@ -47,8 +57,19 @@ def get_video_url( tweet ):
 
   """
 
+  bitrates = [ ]
+
   try:
-    url = tweet.extended_entities['media'][0]['video_info']['variants'][0]['url']
+
+    # select variant with highest bitrate
+    variants = tweet.extended_entities['media'][0]['video_info']['variants']
+    for variant in variants:
+      bitrates.append( variant.get('bitrate', 0 ) )
+    bitrates = np.asarray( bitrates )
+    idx = np.argmax( bitrates )
+
+    # print(tweet.extended_entities['media'][0]['video_info'])
+    url = tweet.extended_entities['media'][0]['video_info']['variants'][idx]['url']
   except:
     url = None
 
@@ -69,25 +90,33 @@ if __name__ == '__main__':
   csvFile = open(f'{hashtag}.csv', 'a')
   #Use csv Writer
   csvWriter = csv.writer(csvFile)
+  csvWriter.writerow(['tweet.id', 'tweet.created_at', 'tweet.text', 'video_url' ])
 
   # initialize list of URLs; initializing with None so we don't have to worry
   # about downloading nonexistant video urls.
   urls_list = [None]
 
+  # initialize CSV file to save tweet data toy
+
+
   # loop over all tweets since specified start_date and containing hashtag
   for tweet in tweepy.Cursor(
     api.search,
-    q=hashtag,
-    count=100,
+    q = hashtag,
+    count = 100,
     include_entities = True,
     since=start_date).items():
+
+    # print(tweet.text)
 
     # extract url from tweet, if it contains a video
     url = get_video_url( tweet )
 
+
     # check to make sure we haven't already downloaded the video for the given
     # url
     if url not in urls_list:
+
       urls_list.append( url )
 
       # video GET request
@@ -100,5 +129,8 @@ if __name__ == '__main__':
       fname = os.path.join( hashtag, url.split('/')[-1] )
       with open(fname, 'wb') as f:
         f.write( r.content )
+
+      # write tweet data to row
+      csvWriter.writerow([tweet.id, tweet.created_at, tweet.text.encode('utf-8'), url.split('/')[-1]])
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++#
