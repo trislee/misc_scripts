@@ -52,7 +52,7 @@ def get_video_url( tweet ):
   Returns
   -------
   url : str or None
-    If tweet contains a video, string of url of tht video.
+    If tweet contains a video, string of url of that video.
     If tweet doesn't contain video, None.
 
   """
@@ -90,7 +90,12 @@ if __name__ == '__main__':
   csvFile = open(f'{hashtag}.csv', 'a')
   #Use csv Writer
   csvWriter = csv.writer(csvFile)
-  csvWriter.writerow(['tweet.id', 'tweet.created_at', 'tweet.text', 'video_url' ])
+  csvWriter.writerow([
+    'tweet.id',
+    'tweet.created_at',
+    'tweet.text',
+    'video_url',
+    'video_name' ] )
 
   # initialize list of URLs; initializing with None so we don't have to worry
   # about downloading nonexistant video urls.
@@ -123,7 +128,7 @@ if __name__ == '__main__':
       r = requests.get( url )
 
       # printing status of request (should be 200 if nothing went wrong)
-      print(r)
+      print(url.split('/')[-1], r)
 
       # write video to file
       fname = os.path.join( hashtag, url.split('/')[-1] )
@@ -131,6 +136,11 @@ if __name__ == '__main__':
         f.write( r.content )
 
       # write tweet data to row
-      csvWriter.writerow([tweet.id, tweet.created_at, tweet.text.encode('utf-8'), url.split('/')[-1]])
+      csvWriter.writerow([
+        str(tweet.id),
+        tweet.created_at,
+        tweet.text.encode('utf-8'),
+        url,
+        url.split('/')[-1] ] )
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++#
